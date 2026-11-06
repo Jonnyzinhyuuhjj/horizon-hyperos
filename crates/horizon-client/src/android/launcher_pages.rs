@@ -319,13 +319,13 @@ impl Launcher {
         }
 
         // Right-side narrow menu panel
-        let menu_w = if w < 500.0 { 82.0 } else { 132.0 };
+        let menu_w = if w < 500.0 { 104.0 } else { 150.0 };
         let menu_x = w - menu_w - 12.0;
         let menu_y = 54.0;
         let menu_h = h - menu_y - 16.0;
         ui.rounded(menu_x, menu_y, menu_w, menu_h, 14.0, panel);
 
-        let item_h = 34.0;
+        let item_h = ((menu_h - 16.0) / (Page::ALL.len() as f32 + 3.0)).clamp(34.0, 44.0);
         let icon_only_y = menu_y + 12.0 + Page::ALL.len() as f32 * item_h + 8.0;
         for (i, page) in Page::ALL.iter().enumerate() {
             let iy = menu_y + 12.0 + i as f32 * item_h;
@@ -352,7 +352,7 @@ impl Launcher {
             if menu_w > 90.0 {
                 ui.text(Face::Medium, 12.0, menu_x + 34.0, iy + 10.0, label_color, short);
             }
-            self.targets.push(([menu_x, iy, menu_w, item_h - 2.0], Action::Page(*page)));
+            self.targets.push(([menu_x, iy, menu_w, item_h - 4.0], Action::Page(*page)));
         }
 
         // Divider then icon-only: Customize, Settings, Account
@@ -363,20 +363,22 @@ impl Launcher {
             (Action::Account, "CO", false),
         ];
         for (j, (action, glyph, selected)) in icon_actions.iter().enumerate() {
-            let iy = icon_only_y + j as f32 * 32.0;
-            let bx = menu_x + (menu_w - 32.0) * 0.5;
+            let iy = icon_only_y + j as f32 * item_h;
+            let bx = menu_x + (menu_w - 44.0) * 0.5;
             if *selected {
-                ui.rounded(bx, iy, 32.0, 28.0, 7.0, color::hex(accent_rgb, 50));
+                ui.rounded(bx, iy, 44.0, item_h - 4.0, 9.0, color::hex(accent_rgb, 50));
             } else {
-                ui.rounded(bx, iy, 32.0, 28.0, 7.0, color::hex(0xffffff, 12));
+                ui.rounded(bx, iy, 44.0, item_h - 4.0, 9.0, color::hex(0xffffff, 12));
             }
-            ui.text(Face::Medium, 12.0, bx + 7.0, iy + 7.0, color::TEXT, glyph);
-            self.targets.push(([bx, iy, 32.0, 28.0], *action));
+            ui.text(Face::Medium, 12.0, bx + 14.0, iy + (item_h - 16.0) * 0.5, color::TEXT, glyph);
+            self.targets.push(([bx, iy, 44.0, item_h - 4.0], *action));
         }
 
         let compact = w < 700.0;
         // Content area is left of the menu
         let content_right = menu_x - 16.0;
+        let content_left = 24.0;
+        let content_w = (content_right - content_left).max(180.0);
         let page = self.catalog.page;
         if page == Page::Play {
             use horizon_client::official_install::InstallStage;
@@ -595,7 +597,7 @@ impl Launcher {
             button(
                 &mut ui,
                 &mut self.targets,
-                [32.0, 174.0, w - 240.0, 44.0],
+                [32.0, 174.0, content_right - 198.0, 44.0],
                 &format!(
                     "{}{}",
                     if page == Page::Mods {
@@ -611,7 +613,7 @@ impl Launcher {
             button(
                 &mut ui,
                 &mut self.targets,
-                [w - 190.0, 174.0, 158.0, 44.0],
+                [content_right - 158.0, 174.0, 158.0, 44.0],
                 if page == Page::Mods && self.catalog.query.trim().starts_with("https://") {
                     "Importar .hmod"
                 } else {
@@ -622,9 +624,9 @@ impl Launcher {
             );
             if matches!(page, Page::Shaders | Page::Mods) {
                 use crate::shader_catalog::Origin;
-                let width = ((w - 185.0) / 2.0).clamp(58.0, 120.0);
+                let width = ((content_w - 24.0) / 2.0).clamp(58.0, 120.0);
                 for (i, origin) in [Origin::Horizon, Origin::Modrinth].into_iter().enumerate() {
-                    let rect = [w - 32.0 - (2 - i) as f32 * width, 134.0, width - 5.0, 32.0];
+                    let rect = [content_right - 12.0 - (2 - i) as f32 * width, 134.0, width - 5.0, 32.0];
                     button(
                         &mut ui,
                         &mut self.targets,
@@ -664,14 +666,14 @@ impl Launcher {
                 Page::Shaders => "Pacotes de shader nativos .hshader",
                 _ => "Downloads verificados / ative em Arquivos",
             };
-            let hint = ui.fit_text(Face::Regular, 14.0, hint, w - 64.0);
+            let hint = ui.fit_text(Face::Regular, 14.0, hint, content_right - 64.0);
             ui.text(Face::Regular, 14.0, 32.0, 270.0, color::MUTED, &hint);
             let kind = match page {
                 Page::Mods => horizon_client::content_files::Kind::Mods,
                 Page::Shaders => horizon_client::content_files::Kind::Shaders,
                 _ => horizon_client::content_files::Kind::Packs,
             };
-            let file_button_width = ((w - 72.0) / 2.0).min(158.0);
+            let file_button_width = ((content_w - 48.0) / 2.0).min(158.0);
             button(
                 &mut ui,
                 &mut self.targets,
@@ -683,7 +685,7 @@ impl Launcher {
             button(
                 &mut ui,
                 &mut self.targets,
-                [w - 32.0 - file_button_width, 222.0, file_button_width, 38.0],
+                [content_right - 32.0 - file_button_width, 222.0, file_button_width, 38.0],
                 "Importar arquivo",
                 Action::Import(kind),
                 false,
@@ -732,15 +734,15 @@ impl Launcher {
                     continue;
                 }
                 // Card surface for each bundled mod, keeping controls in the content area.
-                ui.rounded(24.0, y - 8.0, w - 48.0, 66.0, 12.0, panel);
-                let title = ui.fit_text(Face::Medium, 19.0, title, w - 214.0);
-                let summary = ui.fit_text(Face::Regular, 14.0, description, w - 214.0);
+                ui.rounded(24.0, y - 8.0, content_right - 48.0, 66.0, 12.0, panel);
+                let title = ui.fit_text(Face::Medium, 19.0, title, content_right - 194.0);
+                let summary = ui.fit_text(Face::Regular, 14.0, description, content_right - 194.0);
                 ui.text(Face::Medium, 19.0, 32.0, y, color::TEXT, &title);
                 ui.text(Face::Regular, 14.0, 32.0, y + 29.0, color::MUTED, &summary);
                 button(
                     &mut ui,
                     &mut self.targets,
-                    [w - 150.0, y, 118.0, 42.0],
+                    [content_right - 150.0, y, 118.0, 42.0],
                     if self.catalog.bundled_enabled.contains(*id) {
                         "Desativar"
                     } else {
@@ -759,26 +761,26 @@ impl Launcher {
                         && p.source == crate::browser::SourceId::Modrinth)
                 {
                     self.list_targets
-                        .push(([w - 150.0, y, 118.0, 70.0], Action::Install(i)));
+                        .push(([content_right - 150.0, y, 118.0, 70.0], Action::Install(i)));
                 }
                 if y < top || y + 70.0 > bottom {
                     continue;
                 }
                 // Separate catalog entries into readable cards instead of loose text rows.
-                ui.rounded(24.0, y - 8.0, w - 48.0, 66.0, 12.0, panel);
-                let title = ui.fit_text(Face::Medium, 19.0, &p.title, w - 214.0);
-                let summary = ui.fit_text(Face::Regular, 14.0, &p.summary, w - 214.0);
+                ui.rounded(24.0, y - 8.0, content_right - 48.0, 66.0, 12.0, panel);
+                let title = ui.fit_text(Face::Medium, 19.0, &p.title, content_right - 194.0);
+                let summary = ui.fit_text(Face::Regular, 14.0, &p.summary, content_right - 194.0);
                 ui.text(Face::Medium, 19.0, 32.0, y, color::TEXT, &title);
                 ui.text(Face::Regular, 14.0, 32.0, y + 29.0, color::MUTED, &summary);
                 if let Some(state) = download {
-                    ui.text(Face::Medium, 16.0, w - 150.0, y + 12.0, color::TEXT, &state);
+                    ui.text(Face::Medium, 16.0, content_right - 150.0, y + 12.0, color::TEXT, &state);
                 } else if p.kind == crate::browser::Kind::Mod
                     && p.source == crate::browser::SourceId::Modrinth
                 {
                     ui.text(
                         Face::Regular,
                         14.0,
-                        w - 150.0,
+                        content_right - 150.0,
                         y + 12.0,
                         color::MUTED,
                         "Mod Java",
@@ -787,7 +789,7 @@ impl Launcher {
                     ui.text(
                         Face::Regular,
                         14.0,
-                        w - 150.0,
+                        content_right - 150.0,
                         y + 12.0,
                         color::MUTED,
                         ".hnmod: later",
@@ -797,7 +799,7 @@ impl Launcher {
                     ui.text(
                         Face::Regular,
                         14.0,
-                        w - 150.0,
+                        content_right - 150.0,
                         y + 12.0,
                         color::MUTED,
                         "Requer 64 bits",
@@ -806,7 +808,7 @@ impl Launcher {
                     button(
                         &mut ui,
                         &mut self.targets,
-                        [w - 150.0, y, 118.0, 42.0],
+                        [content_right - 150.0, y, 118.0, 42.0],
                         self.catalog.install_button(p),
                         Action::Install(i),
                         false,
@@ -863,14 +865,14 @@ impl Launcher {
                     kind.label()
                 );
                 self.list_targets
-                    .push(([32.0, y, w - 210.0, 40.0], Action::ToggleSection(section)));
+                    .push(([32.0, y, content_right - 210.0, 40.0], Action::ToggleSection(section)));
                 self.list_targets
-                    .push(([w - 165.0, y, 133.0, 40.0], Action::Import(kind)));
+                    .push(([content_right - 165.0, y, 133.0, 40.0], Action::Import(kind)));
                 if y >= top && y + 40.0 <= bottom {
                     button(
                         &mut ui,
                         &mut self.targets,
-                        [32.0, y, w - 210.0, 40.0],
+                        [32.0, y, content_right - 210.0, 40.0],
                         &label,
                         Action::ToggleSection(section),
                         false,
@@ -878,7 +880,7 @@ impl Launcher {
                     button(
                         &mut ui,
                         &mut self.targets,
-                        [w - 165.0, y, 133.0, 40.0],
+                        [content_right - 165.0, y, 133.0, 40.0],
                         "Importar",
                         Action::Import(kind),
                         false,
@@ -899,7 +901,7 @@ impl Launcher {
                     offset += row_height;
                     self.list_targets.push((
                         [
-                            if compact { 32.0 } else { w - 300.0 },
+                            if compact { 32.0 } else { content_right - 300.0 },
                             y,
                             120.0,
                             row_height - 4.0,
@@ -907,7 +909,7 @@ impl Launcher {
                         Action::ToggleLocal(i),
                     ));
                     self.list_targets.push((
-                        [w - 165.0, y, 133.0, row_height - 4.0],
+                        [content_right - 165.0, y, 133.0, row_height - 4.0],
                         Action::DeleteLocal(i),
                     ));
                     if y < top || y + row_height - 4.0 > bottom {
@@ -917,7 +919,7 @@ impl Launcher {
                         Face::Medium,
                         19.0,
                         &item.title,
-                        if compact { w - 64.0 } else { w - 364.0 },
+                        if compact { content_right - 64.0 } else { content_right - 364.0 },
                     );
                     ui.text(Face::Medium, 19.0, 32.0, y, color::TEXT, &title);
                     ui.text(
@@ -932,7 +934,7 @@ impl Launcher {
                         ui.text(
                             Face::Regular,
                             14.0,
-                            if compact { 32.0 } else { w - 300.0 },
+                            if compact { 32.0 } else { content_right - 300.0 },
                             y + if compact { 62.0 } else { 12.0 },
                             color::MUTED,
                             "Requer 64 bits",
@@ -942,7 +944,7 @@ impl Launcher {
                             &mut ui,
                             &mut self.targets,
                             [
-                                if compact { 32.0 } else { w - 300.0 },
+                                if compact { 32.0 } else { content_right - 300.0 },
                                 y + if compact { 55.0 } else { 0.0 },
                                 120.0,
                                 40.0,
@@ -954,7 +956,7 @@ impl Launcher {
                     button(
                         &mut ui,
                         &mut self.targets,
-                        [w - 165.0, y + if compact { 55.0 } else { 0.0 }, 133.0, 40.0],
+                        [content_right - 165.0, y + if compact { 55.0 } else { 0.0 }, 133.0, 40.0],
                         "Remover",
                         Action::DeleteLocal(i),
                         false,
@@ -1123,13 +1125,13 @@ impl Launcher {
                     }
                 }
                 if y >= 185.0 && y + if compact { 70.0 } else { 46.0 } <= h - 130.0 {
-                    ui.rounded(28.0, y - 5.0, w - 56.0, row_height - 8.0, 10.0, panel);
+                    ui.rounded(28.0, y - 5.0, content_right - 56.0, row_height - 8.0, 10.0, panel);
                 }
                 self.list_targets.push((
                     [
-                        if compact { 32.0 } else { w * 0.36 },
+                        if compact { 32.0 } else { content_left + content_w * 0.36 },
                         y,
-                        if compact { w - 64.0 } else { w * 0.64 - 32.0 },
+                        if compact { content_right - 64.0 } else { content_w * 0.64 - 32.0 },
                         if compact { 70.0 } else { 46.0 },
                     ],
                     action,
@@ -1153,9 +1155,9 @@ impl Launcher {
                         &mut ui,
                         &mut self.targets,
                         [
-                            if compact { 32.0 } else { w * 0.36 },
+                            if compact { 32.0 } else { content_left + content_w * 0.36 },
                             y + if compact { 24.0 } else { 0.0 },
-                            if compact { w - 64.0 } else { w * 0.64 - 32.0 },
+                            if compact { content_right - 64.0 } else { content_w * 0.64 - 32.0 },
                             46.0,
                         ],
                         match action {
@@ -1171,9 +1173,9 @@ impl Launcher {
                         &mut ui,
                         &mut self.targets,
                         [
-                            if compact { 32.0 } else { w * 0.36 },
+                            if compact { 32.0 } else { content_left + content_w * 0.36 },
                             y + if compact { 24.0 } else { 0.0 },
-                            if compact { w - 64.0 } else { w * 0.64 - 32.0 },
+                            if compact { content_right - 64.0 } else { content_w * 0.64 - 32.0 },
                             46.0,
                         ],
                         &format!(
@@ -1201,7 +1203,7 @@ impl Launcher {
                 ui.rounded(
                     32.0,
                     y + if compact { 78.0 } else { 62.0 },
-                    w - 64.0,
+                    content_right - 64.0,
                     1.0,
                     0.0,
                     color::BORDER,
@@ -1210,7 +1212,7 @@ impl Launcher {
             button(
                 &mut ui,
                 &mut self.targets,
-                [w * 0.5 + 6.0, h - 114.0, w * 0.5 - 38.0, 42.0],
+                [content_left + content_w * 0.5 + 6.0, h - 114.0, content_w * 0.5 - 38.0, 42.0],
                 "Conta Microsoft / Xbox",
                 Action::Account,
                 true,
@@ -1218,7 +1220,7 @@ impl Launcher {
             button(
                 &mut ui,
                 &mut self.targets,
-                [32.0, h - 114.0, w * 0.5 - 38.0, 42.0],
+                [32.0, h - 114.0, content_w * 0.5 - 38.0, 42.0],
                 "Diagnósticos",
                 Action::Logs,
                 false,
@@ -1242,14 +1244,14 @@ impl Launcher {
                     Face::Regular,
                     14.0,
                     &line.iter().collect::<String>(),
-                    (w - 210.0).max(40.0),
+                    (content_right - 210.0).max(40.0),
                 ),
             );
         }
         button(
             &mut ui,
             &mut self.targets,
-            [w - 142.0, h - 52.0, 110.0, 32.0],
+            [content_right - 122.0, h - 52.0, 110.0, 32.0],
             "Projeto",
             Action::Repository,
             false,
@@ -1280,8 +1282,8 @@ impl Launcher {
             let height = bottom - top;
             let thumb = (height * height / (height + maximum)).max(20.0).min(height);
             let y = top + (height - thumb) * (scroll / maximum).clamp(0.0, 1.0);
-            ui.rounded(w - 12.0, top, 4.0, height, 2.0, color::BORDER);
-            ui.rounded(w - 12.0, y, 4.0, thumb, 2.0, color::MUTED);
+            ui.rounded(content_right - 8.0, top, 4.0, height, 2.0, color::BORDER);
+            ui.rounded(content_right - 8.0, y, 4.0, thumb, 2.0, color::MUTED);
         }
         let caret_visible = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
