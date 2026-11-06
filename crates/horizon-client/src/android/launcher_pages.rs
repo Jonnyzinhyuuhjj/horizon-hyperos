@@ -318,21 +318,43 @@ impl Launcher {
             );
         }
 
-        // Right-side narrow menu panel
-        let menu_w = if w < 500.0 { 104.0 } else { 150.0 };
+        // Right-side menu panel, sized in proportion to the screen so touch
+        // targets and text stay readable on phones (portrait and landscape).
+        let side_compact = w < 500.0;
+        let menu_w = if side_compact {
+            112.0
+        } else {
+            (w * 0.17).clamp(168.0, 200.0)
+        };
         let menu_x = w - menu_w - 12.0;
-        let menu_y = 54.0;
-        let menu_h = h - menu_y - 16.0;
+        let menu_y = if side_compact { 54.0 } else { 60.0 };
+        let menu_h = (h - menu_y - 16.0).max(120.0);
         ui.rounded(menu_x, menu_y, menu_w, menu_h, 14.0, panel);
 
-        let item_h = ((menu_h - 16.0) / (Page::ALL.len() as f32 + 3.0)).clamp(34.0, 44.0);
-        let icon_only_y = menu_y + 12.0 + Page::ALL.len() as f32 * item_h + 8.0;
+        // Page rows plus the three icon buttons share the panel height; rows
+        // never overflow because the height is divided, not clamped upward.
+        let slots = Page::ALL.len() as f32 + 3.0;
+        let max_item = if side_compact { 52.0 } else { 72.0 };
+        let item_h = ((menu_h - 28.0) / slots).min(max_item).max(24.0);
+        let ts = (item_h / 44.0).clamp(0.85, 1.5);
+        let label_size = 12.0 * ts;
+        let glyph_size = 11.0 * ts;
+        let row_h = item_h - 4.0;
+        let text_top = |size: f32| (row_h - size * 1.15) * 0.5;
+        let icon_only_y = menu_y + 12.0 + Page::ALL.len() as f32 * item_h + 10.0;
         for (i, page) in Page::ALL.iter().enumerate() {
             let iy = menu_y + 12.0 + i as f32 * item_h;
             let selected = self.catalog.page == *page;
             if selected {
-                ui.rounded(menu_x + 4.0, iy, menu_w - 8.0, item_h - 4.0, 8.0, color::hex(accent_rgb, 40));
-                ui.rounded(menu_x + 4.0, iy + 6.0, 3.0, item_h - 16.0, 1.0, accent);
+                ui.rounded(menu_x + 4.0, iy, menu_w - 8.0, row_h, 8.0, color::hex(accent_rgb, 40));
+                ui.rounded(
+                    menu_x + 4.0,
+                    iy + row_h * 0.15,
+                    3.0,
+                    row_h * 0.7,
+                    1.0,
+                    accent,
+                );
             }
             let label_color = if selected { color::TEXT } else { color::MUTED };
             let short = match page {
@@ -348,30 +370,65 @@ impl Launcher {
                 Page::Installed => "AR",
                 _ => ".",
             };
-            ui.text(Face::Medium, 11.0, menu_x + 10.0, iy + 10.0, label_color, icon);
-            if menu_w > 90.0 {
-                ui.text(Face::Medium, 12.0, menu_x + 34.0, iy + 10.0, label_color, short);
+            let icon_x = menu_x + 10.0 * ts;
+            ui.text(
+                Face::Medium,
+                glyph_size,
+                icon_x,
+                iy + text_top(glyph_size),
+                label_color,
+                icon,
+            );
+            let label_x = menu_x + 34.0 * ts;
+            let label_w = menu_x + menu_w - label_x - 6.0;
+            if label_w > 32.0 {
+                let label = ui.fit_text(Face::Medium, label_size, short, label_w);
+                ui.text(
+                    Face::Medium,
+                    label_size,
+                    label_x,
+                    iy + text_top(label_size),
+                    label_color,
+                    &label,
+                );
             }
-            self.targets.push(([menu_x, iy, menu_w, item_h - 4.0], Action::Page(*page)));
+            self.targets.push(([menu_x, iy, menu_w, row_h], Action::Page(*page)));
         }
 
         // Divider then icon-only: Customize, Settings, Account
-        ui.rounded(menu_x + 16.0, icon_only_y - 10.0, menu_w - 32.0, 1.0, 0.0, color::BORDER);
+        ui.rounded(
+            menu_x + 16.0,
+            icon_only_y - 10.0,
+            menu_w - 32.0,
+            1.0,
+            0.0,
+            color::BORDER,
+        );
         let icon_actions = [
             (Action::Page(Page::Customize), "TE", self.catalog.page == Page::Customize),
             (Action::Page(Page::Settings), "CF", self.catalog.page == Page::Settings),
             (Action::Account, "CO", false),
         ];
+        let btn_w = (menu_w - 24.0).clamp(44.0, 80.0);
         for (j, (action, glyph, selected)) in icon_actions.iter().enumerate() {
             let iy = icon_only_y + j as f32 * item_h;
-            let bx = menu_x + (menu_w - 44.0) * 0.5;
+            let bx = menu_x + (menu_w - btn_w) * 0.5;
             if *selected {
-                ui.rounded(bx, iy, 44.0, item_h - 4.0, 9.0, color::hex(accent_rgb, 50));
+                ui.rounded(bx, iy, btn_w, row_h, 9.0, color::hex(accent_rgb, 50));
             } else {
-                ui.rounded(bx, iy, 44.0, item_h - 4.0, 9.0, color::hex(0xffffff, 12));
+                ui.rounded(bx, iy, btn_w, row_h, 9.0, color::hex(0xffffff, 12));
             }
-            ui.text(Face::Medium, 12.0, bx + 14.0, iy + (item_h - 16.0) * 0.5, color::TEXT, glyph);
-            self.targets.push(([bx, iy, 44.0, item_h - 4.0], *action));
+            let gs = 12.0 * ts;
+            let gw = ui.measure(Face::Medium, gs, glyph);
+            ui.text(
+                Face::Medium,
+                gs,
+                bx + (btn_w - gw) * 0.5,
+                iy + text_top(gs),
+                color::TEXT,
+                glyph,
+            );
+            self.targets.push(([bx, iy, btn_w, row_h], *action));
         }
 
         let compact = w < 700.0;
