@@ -194,7 +194,7 @@ impl Launcher {
             return Ok(());
         }
         let window = Arc::new(
-            events.create_window(Window::default_attributes().with_title("Horizon Android"))?,
+            events.create_window(Window::default_attributes().with_title("Hyper OS Launcher"))?,
         );
         crate::display::prepare(&window)?;
         let gui = game::UiResources {

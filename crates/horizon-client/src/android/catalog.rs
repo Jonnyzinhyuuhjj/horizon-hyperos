@@ -26,9 +26,9 @@ pub enum RendererMode {
 impl RendererMode {
     pub fn label(self) -> &'static str {
         match self {
-            Self::Vulkan => "Vulkan / GPU batching",
+            Self::Vulkan => "Vulkan / processamento pela GPU",
             Self::OpenGl => "OpenGL ES / experimental",
-            Self::VulkanCompatibility => "Vulkan / compatibility",
+            Self::VulkanCompatibility => "Vulkan / compatibilidade",
         }
     }
 }
@@ -91,11 +91,11 @@ impl Orientation {
     ];
     pub fn label(self) -> &'static str {
         match self {
-            Self::Landscape => "Landscape (sensor)",
-            Self::Portrait => "Portrait (sensor)",
-            Self::ReverseLandscape => "Landscape (reversed)",
-            Self::ReversePortrait => "Portrait (reversed)",
-            Self::Auto => "Automatic rotation",
+            Self::Landscape => "Paisagem (sensor)",
+            Self::Portrait => "Retrato (sensor)",
+            Self::ReverseLandscape => "Paisagem invertida",
+            Self::ReversePortrait => "Retrato invertido",
+            Self::Auto => "Rotação automática",
         }
     }
     pub fn android_value(self) -> i32 {
@@ -117,7 +117,7 @@ impl Config {
         let mut config: Self = serde_json::from_value(value.clone()).unwrap_or_default();
         // Default theme/animation when keys are missing from older configs.
         if value.get("theme").is_none() {
-            config.theme = "fire-skull".into();
+            config.theme = "night".into();
         }
         if value.get("fire_skull_anim").is_none() {
             config.fire_skull_anim = true;
@@ -187,13 +187,13 @@ impl Page {
     ];
     pub fn name(self) -> &'static str {
         match self {
-            Self::Play => "Play",
+            Self::Play => "Início",
             Self::Mods => "Mods",
-            Self::Packs => "Packs",
+            Self::Packs => "Pacotes",
             Self::Shaders => "Shaders",
-            Self::Installed => "Installed",
-            Self::Settings => "Settings",
-            Self::Customize => "Customize",
+            Self::Installed => "Arquivos",
+            Self::Settings => "Configurações",
+            Self::Customize => "Personalização",
         }
     }
     pub fn is_catalog(self) -> bool {

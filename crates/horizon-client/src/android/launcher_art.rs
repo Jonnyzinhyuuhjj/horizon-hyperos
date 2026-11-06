@@ -107,9 +107,9 @@ pub fn draw_fire_skull(
         true
     };
     let eye = if eye_hot {
-        rgba(0xffb02e, 220)
+        rgba(0xd8b4fe, 230)
     } else {
-        rgba(0xff5a1f, 220)
+        rgba(0x9333ea, 220)
     };
     let bone = rgba(0xd9cfc0, 100); // ~40% overall feel via alpha
     let cols = 15.0;
@@ -133,11 +133,11 @@ pub fn draw_fire_skull(
                 let ly = flame_base - (level as f32 + 1.0) * px;
                 let frac = (level as f32 + 1.0) / h as f32;
                 let c = if frac > 0.7 {
-                    rgba(0xe0381f, 140)
+                    rgba(0x6d28d9, 150)
                 } else if frac > 0.4 {
-                    rgba(0xff8a1f, 150)
+                    rgba(0xa855f7, 160)
                 } else {
-                    rgba(0xffd23a, 160)
+                    rgba(0xe9d5ff, 170)
                 };
                 pixel(ui, hx, ly, px, c);
             }
@@ -289,6 +289,43 @@ pub fn draw_warden_theme(ui: &mut Ui, w: f32, h: f32, t0: Instant, anim: bool) {
     }
 }
 
+/// Soft purple glass-like background used by the Hyper OS launcher.
+/// Built from low-alpha shapes so it stays lightweight on mobile GPUs.
+pub fn draw_hyperos_background(
+    ui: &mut Ui,
+    w: f32,
+    h: f32,
+    accent: u32,
+    t0: Instant,
+    anim: bool,
+) {
+    let elapsed = t0.elapsed().as_secs_f32();
+    let glow = rgba(accent, 18);
+    let glow_soft = rgba(accent, 10);
+    let edge = rgba(accent, 34);
+
+    // Broad ambient light pools; deliberately subtle behind readable cards.
+    ui.rounded(-w * 0.08, h * 0.08, w * 0.58, h * 0.72, h * 0.20, glow_soft);
+    ui.rounded(w * 0.48, h * 0.38, w * 0.60, h * 0.70, h * 0.22, glow_soft);
+    ui.rounded(w * 0.16, h * 0.12, w * 0.66, h * 0.76, h * 0.24, rgba(0x211044, 26));
+
+    // Thin inset frame gives the dark background a layered, glass-panel feel.
+    ui.border(10.0, 10.0, (w - 20.0).max(1.0), (h - 20.0).max(1.0), 18.0, edge);
+    ui.rounded(18.0, h * 0.17, w * 0.36, 2.0, 1.0, rgba(accent, 42));
+    ui.rounded(w * 0.66, h * 0.82, w * 0.25, 2.0, 1.0, rgba(accent, 32));
+
+    // Small drifting pixels add depth without a heavy image texture.
+    for i in 0..14 {
+        let seed = i as f32 * 19.17;
+        let drift = if anim { elapsed } else { 0.0 };
+        let x = ((seed * 1.71 + drift * (0.7 + (i % 3) as f32 * 0.13)).sin() * 0.5 + 0.5) * w;
+        let y = ((seed * 0.83 + drift * 0.24).cos() * 0.5 + 0.5) * h;
+        let size = if i % 4 == 0 { 4.0 } else { 2.0 };
+        let alpha = if i % 3 == 0 { 62 } else { 34 };
+        pixel(ui, x, y, size, rgba(accent, alpha));
+    }
+}
+
 /// Theme identifiers (stored in config).
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum LauncherTheme {
@@ -322,12 +359,12 @@ impl LauncherTheme {
     }
     pub fn label(self) -> &'static str {
         match self {
-            Self::Night => "Night",
-            Self::FireSkull => "Fire skull",
-            Self::Midnight => "Midnight",
-            Self::Crimson => "Crimson",
-            Self::TheEnd => "The End",
-            Self::Warden => "Warden",
+            Self::Night => "Noturno",
+            Self::FireSkull => "Chama roxa",
+            Self::Midnight => "Meia-noite",
+            Self::Crimson => "Carmesim",
+            Self::TheEnd => "O End",
+            Self::Warden => "Guardião",
         }
     }
     pub fn from_id(s: &str) -> Self {
